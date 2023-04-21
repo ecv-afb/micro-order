@@ -1,18 +1,59 @@
-import { Injectable } from '@nestjs/common';
-import { OrderDetailsDto, OrderToCreateDto, ShippingRequestDto, UpdateOrderDto } from './dtos';
-import { API_URL, SHIPPING_API_URL } from 'src/main';
 import { HttpService } from '@nestjs/axios';
-import { map } from 'rxjs';
+import { Injectable } from '@nestjs/common';
+import { catchError, map } from 'rxjs';
+import { API_URL, SHIPPING_API_URL } from 'src/main';
+import {
+  OrderDetailsDto,
+  OrderToCreateDto,
+  ShippingRequestDto,
+  StockMovementType,
+  StockProductDto,
+  UpdateOrderDto,
+} from './dtos';
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly httpService: HttpService) {}
   create(createOrderDto: OrderToCreateDto) {
-    this.httpService.post(`${API_URL}/orders`, createOrderDto).pipe(
-      map(() => {
-        console.log();
-      }),
+    let stock: StockProductDto[] = [];
+
+    this.httpService.get(`${API_URL}/api/stock`).subscribe((e) => {
+      stock = e.data;
+    });
+
+    const unavailability = createOrderDto.products.find(
+      (product: StockProductDto) => {
+        console.log(stock[0]);
+        const productStock = stock.find(
+          (list) => product.productId === list.productId,
+        );
+        return productStock.quantity < product.quantity;
+      },
     );
+    if (unavailability === null) {
+      for (const product of createOrderDto.products) {
+        this.httpService
+          .post(`${API_URL}/api/stock/${product.productId}/movement`, {
+            productId: product.productId,
+            quantity: product.quantity,
+            status: StockMovementType.Reserve,
+          })
+          .pipe(
+            map((res) => {
+              console.log(res);
+              // return this.httpService.post(
+              //   `${API_URL}/order`,
+              //   productsToCreate,
+              // );
+            }),
+            catchError((err) => {
+              console.log('error');
+              return err;
+            }),
+          )
+          .subscribe();
+      }
+    }
   }
 
   findAll() {
@@ -32,10 +73,13 @@ export class OrdersService {
   }
 
   notifyShipping(orderDetailsDto: OrderDetailsDto) {
-    const shippingRequestDto : ShippingRequestDto = {
-      orderId : orderDetailsDto.id.toString(),
-      nbProducts : orderDetailsDto.products.reduce((accumulator, product) => accumulator + product.quantity, 0)
-    }
-    this.httpService.post(`${SHIPPING_API_URL}/shipping`, shippingRequestDto) 
+    const shippingRequestDto: ShippingRequestDto = {
+      orderId: orderDetailsDto.id.toString(),
+      nbProducts: orderDetailsDto.products.reduce(
+        (accumulator, product) => accumulator + product.quantity,
+        0,
+      ),
+    };
+    this.httpService.post(`${SHIPPING_API_URL}/shipping`, shippingRequestDto);
   }
 }
