@@ -1,14 +1,15 @@
+import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
+import { catchError, map } from 'rxjs';
+import { API_URL, SHIPPING_API_URL } from 'src/main';
 import {
   OrderDetailsDto,
   OrderToCreateDto,
+  ShippingRequestDto,
   StockMovementType,
   StockProductDto,
   UpdateOrderDto,
 } from './dtos';
-import { API_URL } from 'src/main';
-import { HttpService } from '@nestjs/axios';
-import { Observable, catchError, filter, map, switchMap, tap } from 'rxjs';
 
 @Injectable()
 export class OrdersService {
@@ -69,5 +70,16 @@ export class OrdersService {
 
   remove(id: number) {
     return `This action removes a #${id} order`;
+  }
+
+  notifyShipping(orderDetailsDto: OrderDetailsDto) {
+    const shippingRequestDto: ShippingRequestDto = {
+      orderId: orderDetailsDto.id.toString(),
+      nbProducts: orderDetailsDto.products.reduce(
+        (accumulator, product) => accumulator + product.quantity,
+        0,
+      ),
+    };
+    this.httpService.post(`${SHIPPING_API_URL}/shipping`, shippingRequestDto);
   }
 }

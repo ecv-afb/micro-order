@@ -45,3 +45,7 @@ export interface StockProductDto {
   productId: string;
   quantity: number;
 }
+export interface ShippingRequestDto {
+  orderId: string;
+  nbProducts: number;
+}
