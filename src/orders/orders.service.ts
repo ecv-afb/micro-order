@@ -2,12 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { OrderToCreateDto, UpdateOrderDto } from './dtos';
 import { API_URL } from 'src/main';
 import { HttpService } from '@nestjs/axios';
+import { map } from 'rxjs';
 
 @Injectable()
 export class OrdersService {
   constructor(private readonly httpService: HttpService) {}
   create(createOrderDto: OrderToCreateDto) {
-    this.httpService.post(`${API_URL}/orders`, createOrderDto);
+    this.httpService.post(`${API_URL}/orders`, createOrderDto).pipe(
+      map(() => {
+        console.log();
+      }),
+    );
   }
 
   findAll() {
