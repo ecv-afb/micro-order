@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { OrderToCreateDto, UpdateOrderDto } from './dtos';
-import { API_URL } from 'src/main';
+import { OrderDetailsDto, OrderToCreateDto, ShippingRequestDto, UpdateOrderDto } from './dtos';
+import { API_URL, SHIPPING_API_URL } from 'src/main';
 import { HttpService } from '@nestjs/axios';
 import { map } from 'rxjs';
 
@@ -29,5 +29,13 @@ export class OrdersService {
 
   remove(id: number) {
     return `This action removes a #${id} order`;
+  }
+
+  notifyShipping(orderDetailsDto: OrderDetailsDto) {
+    const shippingRequestDto : ShippingRequestDto = {
+      orderId : orderDetailsDto.id.toString(),
+      nbProducts : orderDetailsDto.products.reduce((accumulator, product) => accumulator + product.quantity, 0)
+    }
+    this.httpService.post(`${SHIPPING_API_URL}/shipping`, shippingRequestDto) 
   }
 }

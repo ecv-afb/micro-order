@@ -35,3 +35,8 @@ export enum OrderStatusDto {
 export interface UpdateOrderDto {
   status: OrderStatusDto;
 }
+
+export interface ShippingRequestDto {
+  orderId: string;
+  nbProducts: number;
+}
