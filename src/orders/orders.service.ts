@@ -10,6 +10,7 @@ import {
   StockProductDto,
   UpdateOrderDto,
 } from './dtos';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class OrdersService {
@@ -71,9 +72,9 @@ export class OrdersService {
           const orderDetails = response.data;
           return orderDetails;
         }),
-        catchError((err) => {
-          console.log(err);
-          return err.data;
+        catchError((error: any) => {
+          console.error(error.response.data);
+          return 'An error happened!';
           // if (err.status === 404) {
           //   return "La commande n'existe pas";
           // } else {
