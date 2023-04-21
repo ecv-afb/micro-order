@@ -35,3 +35,13 @@ export enum OrderStatusDto {
 export interface UpdateOrderDto {
   status: OrderStatusDto;
 }
+
+export enum StockMovementType {
+  Supply = 'Supply',
+  Reserve = 'Reserve',
+  Removal = 'Removal',
+}
+export interface StockProductDto {
+  productId: string;
+  quantity: number;
+}
