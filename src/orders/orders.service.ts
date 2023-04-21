@@ -1,6 +1,6 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
-import { catchError, map } from 'rxjs';
+import { Observable, catchError, map, switchMap, throwError } from 'rxjs';
 import { API_URL, SHIPPING_API_URL } from 'src/main';
 import {
   OrderDetailsDto,
@@ -31,20 +31,23 @@ export class OrdersService {
       },
     );
     if (unavailability === null) {
-      for (const product of createOrderDto.products) {
+      for (const productsToCreate of createOrderDto.products) {
         this.httpService
-          .post(`${API_URL}/api/stock/${product.productId}/movement`, {
-            productId: product.productId,
-            quantity: product.quantity,
+          .post(`${API_URL}/api/stock/${productsToCreate.productId}/movement`, {
+            productId: productsToCreate.productId,
+            quantity: productsToCreate.quantity,
             status: StockMovementType.Reserve,
           })
           .pipe(
             map((res) => {
               console.log(res);
-              // return this.httpService.post(
-              //   `${API_URL}/order`,
-              //   productsToCreate,
-              // );
+              return this.httpService.post(
+                `${API_URL}/order`,
+                productsToCreate,
+              );
+            }),
+            switchMap((succes: any) => {
+              return this.notifyShipping(succes);
             }),
             catchError((err) => {
               console.log('error');
@@ -61,7 +64,24 @@ export class OrdersService {
   }
 
   findOne(id: number) {
-    return `This action returns a #${id} order`;
+    this.httpService
+      .get(`${API_URL}/order/${id}`)
+      .pipe(
+        map((response) => {
+          const orderDetails = response.data;
+          return orderDetails;
+        }),
+        catchError((err) => {
+          console.log(err);
+          return err.data;
+          // if (err.status === 404) {
+          //   return "La commande n'existe pas";
+          // } else {
+          //   return err;
+          // }
+        }),
+      )
+      .subscribe();
   }
 
   update(id: number, updateOrderDto: UpdateOrderDto) {
@@ -80,6 +100,9 @@ export class OrdersService {
         0,
       ),
     };
-    this.httpService.post(`${SHIPPING_API_URL}/shipping`, shippingRequestDto);
+    return this.httpService.post(
+      `${SHIPPING_API_URL}/shipping`,
+      shippingRequestDto,
+    );
   }
 }
